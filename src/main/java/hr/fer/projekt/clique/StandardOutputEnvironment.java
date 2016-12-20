@@ -15,7 +15,10 @@ public class StandardOutputEnvironment<V> implements OutputEnvironment<V> {
     }
 
     public static <V> StandardOutputEnvironment getInstance() {
-        return instance == null ? new StandardOutputEnvironment() : instance;
+        if(instance == null) {
+            instance = new StandardOutputEnvironment();
+        }
+        return instance;
     }
 
     @Override

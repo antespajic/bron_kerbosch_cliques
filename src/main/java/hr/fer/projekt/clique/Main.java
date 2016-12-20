@@ -1,5 +1,7 @@
 package hr.fer.projekt.clique;
 
+import hr.fer.projekt.clique.input.GraphLoader;
+import org.jgrapht.Graph;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
@@ -11,8 +13,12 @@ public class Main {
         UndirectedGraph<String, DefaultEdge> testGraph = createStringGraph();
         OutputEnvironment<String> outputEnvironment = StandardOutputEnvironment.getInstance();
 
+        GraphLoader graphLoader = GraphLoader.getGraphLoader();
+
+        Graph<String, DefaultEdge> testGraph02 = graphLoader.loadStringGraph("./examples/graph01.txt");
+
         BronKerbosch<String, DefaultEdge> bronKerbosch = new BronKerbosch<>(
-                testGraph,
+                testGraph02,
                 true,
                 false,
                 outputEnvironment);
