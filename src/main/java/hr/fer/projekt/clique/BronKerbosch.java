@@ -1,68 +1,130 @@
 package hr.fer.projekt.clique;
 
+import hr.fer.projekt.clique.utility.CollectionUtility;
 import org.jgrapht.Graph;
 
 import java.util.*;
 
 public class BronKerbosch<V, E> {
 
-    /** Graph. */
+    /**
+     * Graph traversed.
+     */
     private final Graph<V, E> graph;
 
-    /** All maximal cliques found for given graph. */
-    private Collection<Set<V>> cliques;
+    /**
+     * Maximal cliques found for given graph.
+     */
+    private Collection<Set<V>> maximalCliques;
+
+    /**
+     * Maximum cliques found for given graph.
+     */
+    private Collection<Set<V>> maximumCliques;
 
     /**
      * Specifies whether degeneracy ordering should be utilized at
      * the outermost level of recursion.
      */
-    private boolean degeneracyOrdering;
+    private boolean utilizeDegeneracyOrdering;
 
     /**
      * Specifies whether pivot vertex should be calculated and
      * pivot environment utilized in recursive calls.
      */
-    private boolean pivotEnvironment;
+    private boolean utilizePivotEnvironment;
 
-    public BronKerbosch(Graph<V, E> graph, boolean degeneracyOrdering, boolean pivotEnvironment) {
-        if(graph == null) {
+    /**
+     * Output environment served during and after algorithm
+     * computation.
+     */
+    private OutputEnvironment<V> outputEnvironment;
+
+    public BronKerbosch(
+            Graph<V, E> graph,
+            boolean utilizeDegeneracyOrdering,
+            boolean utilizePivotEnvironment,
+            OutputEnvironment<V> outputEnvironment) {
+        if (graph == null) {
             throw new IllegalArgumentException("Graph passed can not be null.");
+        } else if (outputEnvironment == null) {
+            throw new IllegalArgumentException("Output environment passed can not be null.");
         }
         this.graph = graph;
-        this.degeneracyOrdering = degeneracyOrdering;
-        this.pivotEnvironment = pivotEnvironment;
+        this.utilizeDegeneracyOrdering = utilizeDegeneracyOrdering;
+        this.utilizePivotEnvironment = utilizePivotEnvironment;
+        this.outputEnvironment = outputEnvironment;
     }
 
-    public Collection<Set<V>> getAllMaximalCliques() {
-        cliques = new ArrayList<>();
+    public void performTraversal() {
+        findMaximalCliques();
+        findMaximumCliques();
+
+        outputEnvironment.setMaximalCliques(maximalCliques);
+        outputEnvironment.setMaximumCliques(maximumCliques);
+    }
+
+    private void findMaximalCliques() {
+
+        maximalCliques = new ArrayList<>();
+
         List<V> potentialClique = new ArrayList<>();
-        List<V> vertexCandidates = new ArrayList<>();
+        List<V> vertexCandidates = new ArrayList<>(graph.vertexSet());
         List<V> vertexFound = new ArrayList<>();
-        vertexCandidates.addAll(graph.vertexSet());
-        findCliques(potentialClique, vertexCandidates, vertexFound);
-        return cliques;
+
+        if (utilizeDegeneracyOrdering) {
+            degeneracyOrdering(potentialClique, vertexCandidates, vertexFound);
+        } else {
+            findCliques(potentialClique, vertexCandidates, vertexFound);
+        }
     }
 
-    public Collection<Set<V>> getBiggestMaximalCliques() {
-        getAllMaximalCliques();
+    private void findMaximumCliques() {
+        maximumCliques = new ArrayList<>();
         int maximum = 0;
-        Collection<Set<V>> biggestCliques = new ArrayList<>();
-        for (Set<V> clique : cliques) {
+        for (Set<V> clique : maximalCliques) {
             if (maximum < clique.size()) {
                 maximum = clique.size();
             }
         }
-        for (Set<V> clique : cliques) {
+        for (Set<V> clique : maximalCliques) {
             if (maximum == clique.size()) {
-                biggestCliques.add(clique);
+                maximumCliques.add(clique);
             }
         }
-        return biggestCliques;
     }
 
-    private void findCliques(List<V> potentialClique, List<V> vertexCandidates, List<V> vertexFound) {
-        List<V> candidates = new ArrayList<>(vertexCandidates);
+    private void degeneracyOrdering(
+            Collection<V> potentialClique,
+            Collection<V> vertexCandidates,
+            Collection<V> vertexFound) {
+
+        for (V vertex : getDegeneracyOrdering()) {
+            Collection<V> neighbours = getNeighbouringVertices(vertex, vertexCandidates);
+
+            // Updating collections.
+            List<V> newPotentialClique = new ArrayList<>(potentialClique);
+            newPotentialClique.add(vertex);
+            Collection<V> newVertexCandidates = CollectionUtility.intersection(vertexCandidates, neighbours);
+            Collection<V> newVertexFound = CollectionUtility.intersection(vertexFound, neighbours);
+
+            findCliques(newPotentialClique, newVertexCandidates, newVertexFound);
+
+            vertexCandidates.remove(vertex);
+            vertexFound.add(vertex);
+        }
+    }
+
+    private void findCliques(Collection<V> potentialClique, Collection<V> vertexCandidates, Collection<V> vertexFound) {
         if (!end(vertexCandidates, vertexFound)) {
+
+            Collection<V> candidates;
+            if (utilizePivotEnvironment) {
+                candidates = CollectionUtility.removeAll(vertexCandidates, pivotEnvironment(vertexCandidates, vertexFound));
+            } else {
+                candidates = new ArrayList<>(vertexCandidates);
+            }
+
             for (V candidate : candidates) {
 
                 // Collections needed for recursion call.
@@ -83,9 +145,9 @@ public class BronKerbosch<V, E> {
 
                 // Creating new vertexFound collection by removing all vertexes
                 // in present collection not connected to vertex candidate.
-                for (V new_found : vertexFound) {
-                    if (graph.containsEdge(candidate, new_found)) {
-                        newVertexFound.add(new_found);
+                for (V newFound : vertexFound) {
+                    if (graph.containsEdge(candidate, newFound)) {
+                        newVertexFound.add(newFound);
                     }
                 }
 
@@ -94,7 +156,7 @@ public class BronKerbosch<V, E> {
                 // which were already found are both empty, potential clique
                 // is indeed maximal clique.
                 if (newVertexCandidates.isEmpty() && newVertexFound.isEmpty()) {
-                    cliques.add(new HashSet<>(potentialClique));
+                    maximalCliques.add(new HashSet<>(potentialClique));
                 } else {
                     findCliques(potentialClique, newVertexCandidates, newVertexFound);
                 }
@@ -110,7 +172,7 @@ public class BronKerbosch<V, E> {
         }
     }
 
-    private boolean end(List<V> vertexCandidates, List<V> vertexFound) {
+    private boolean end(Collection<V> vertexCandidates, Collection<V> vertexFound) {
         boolean end = false;
         int edgeCounter;
         for (V found : vertexFound) {
@@ -128,12 +190,8 @@ public class BronKerbosch<V, E> {
     }
 
     // Strategy utilizing pivot environment.
-    private Collection<V> pivotEnvironment(Collection<V> vertexCandidates, Collection<V> pivotCandidates) {
-
-        // Safety check.
-        if (pivotCandidates.isEmpty()) {
-            return Collections.emptyList();
-        }
+    private Collection<V> pivotEnvironment(Collection<V> vertexCandidates, Collection<V> vertexFound) {
+        Collection<V> pivotCandidates = CollectionUtility.union(vertexCandidates, vertexFound);
 
         // Searching for pivot vertex - one with the most connections
         // to other pivot candidates.
@@ -147,18 +205,12 @@ public class BronKerbosch<V, E> {
             }
         }
 
-        List<V> pivotEnvironment = new ArrayList<V>();
-        for (V candidate : vertexCandidates) {
-            if (graph.containsEdge(pivotCandidate, candidate)) {
-                pivotEnvironment.add(candidate);
-            }
-        }
-        return pivotEnvironment;
+        return getNeighbouringVertices(pivotCandidate, vertexCandidates);
     }
 
     private Collection<V> getDegeneracyOrdering() {
 
-        Collection<V> vertices = new HashSet<V>(graph.vertexSet());
+        Collection<V> vertices = new HashSet<>(graph.vertexSet());
         Collection<V> degeneracyOrdering = new ArrayList<>();
 
         while (!vertices.isEmpty()) {
@@ -186,5 +238,23 @@ public class BronKerbosch<V, E> {
         }
 
         return degeneracyOrdering;
+    }
+
+    /**
+     * Traverses given collection of vertex candidates and returns
+     * collection of vertices that are neighbouring passed vertex.
+     *
+     * @param vertex     vertex whose neighbouring vertices are requested
+     * @param candidates candidates for neighbouring vertices
+     * @return collection of neighbouring vertices
+     */
+    private Collection<V> getNeighbouringVertices(V vertex, Collection<V> candidates) {
+        List<V> neighbouringVertices = new ArrayList<>();
+        for (V candidate : candidates) {
+            if (graph.containsEdge(vertex, candidate)) {
+                neighbouringVertices.add(candidate);
+            }
+        }
+        return neighbouringVertices;
     }
 }
