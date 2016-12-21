@@ -1,0 +1,8 @@
+## Vertices definitions
+%Vertices%
+1 2 3
+4 5 6
+## Edges/connections definitions
+%Connections%
+1-2 1-5 2-3 2-5
+4-3 4-5 6-4
