@@ -8,7 +8,7 @@ import java.util.Set;
  * with different algorithms. Environment offers output of algorithm
  * steps, as well as result storage and retrieval.
  *
- * @param <V> type variable of vertices in graph
+ * @param <V> variable type of vertices in graph
  */
 public interface OutputEnvironment<V> {
 
