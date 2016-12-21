@@ -1,6 +1,8 @@
 package hr.fer.projekt.clique;
 
+import hr.fer.projekt.clique.output.OutputEnvironment;
 import hr.fer.projekt.clique.utility.CollectionUtility;
+import hr.fer.projekt.clique.utility.GraphTraversalUtility;
 import org.jgrapht.Graph;
 
 import java.util.*;
@@ -99,8 +101,9 @@ public class BronKerbosch<V, E> {
             Collection<V> vertexCandidates,
             Collection<V> vertexFound) {
 
-        for (V vertex : getDegeneracyOrdering()) {
-            Collection<V> neighbours = getNeighbouringVertices(vertex, vertexCandidates);
+        Collection<V> degeneracyOrdering = GraphTraversalUtility.getDegeneracyOrdering(graph);
+        for (V vertex : degeneracyOrdering) {
+            Collection<V> neighbours = GraphTraversalUtility.getNeighbouringVertices(graph, vertex, vertexCandidates);
 
             // Updating collections.
             List<V> newPotentialClique = new ArrayList<>(potentialClique);
@@ -193,6 +196,10 @@ public class BronKerbosch<V, E> {
     private Collection<V> pivotEnvironment(Collection<V> vertexCandidates, Collection<V> vertexFound) {
         Collection<V> pivotCandidates = CollectionUtility.union(vertexCandidates, vertexFound);
 
+        if(pivotCandidates.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         // Searching for pivot vertex - one with the most connections
         // to other pivot candidates.
         int edgeCounter = 0;
@@ -205,56 +212,6 @@ public class BronKerbosch<V, E> {
             }
         }
 
-        return getNeighbouringVertices(pivotCandidate, vertexCandidates);
-    }
-
-    private Collection<V> getDegeneracyOrdering() {
-
-        Collection<V> vertices = new HashSet<>(graph.vertexSet());
-        Collection<V> degeneracyOrdering = new ArrayList<>();
-
-        while (!vertices.isEmpty()) {
-
-            // Finding current degeneracy.
-            int d = Integer.MAX_VALUE;
-            for (V vertex : vertices) {
-                int currentEdges = graph.edgesOf(vertex).size();
-                if (currentEdges < d) {
-                    d = currentEdges;
-                }
-            }
-
-            V candidate = null;
-            for (V vertex : vertices) {
-                int currentEdges = graph.edgesOf(vertex).size();
-                if (currentEdges == d) {
-                    candidate = vertex;
-                    break;
-                }
-            }
-
-            vertices.remove(candidate);
-            degeneracyOrdering.add(candidate);
-        }
-
-        return degeneracyOrdering;
-    }
-
-    /**
-     * Traverses given collection of vertex candidates and returns
-     * collection of vertices that are neighbouring passed vertex.
-     *
-     * @param vertex     vertex whose neighbouring vertices are requested
-     * @param candidates candidates for neighbouring vertices
-     * @return collection of neighbouring vertices
-     */
-    private Collection<V> getNeighbouringVertices(V vertex, Collection<V> candidates) {
-        List<V> neighbouringVertices = new ArrayList<>();
-        for (V candidate : candidates) {
-            if (graph.containsEdge(vertex, candidate)) {
-                neighbouringVertices.add(candidate);
-            }
-        }
-        return neighbouringVertices;
+        return GraphTraversalUtility.getNeighbouringVertices(graph, pivotCandidate, vertexCandidates);
     }
 }
