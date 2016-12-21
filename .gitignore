@@ -17,5 +17,5 @@ target/
 .project
 
 #Idea
-idea/
+.idea
 *.iml
