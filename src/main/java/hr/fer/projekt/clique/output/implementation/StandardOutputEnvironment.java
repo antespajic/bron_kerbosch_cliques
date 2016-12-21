@@ -1,4 +1,6 @@
-package hr.fer.projekt.clique;
+package hr.fer.projekt.clique.output.implementation;
+
+import hr.fer.projekt.clique.output.OutputEnvironment;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -1,6 +1,8 @@
 package hr.fer.projekt.clique;
 
 import hr.fer.projekt.clique.input.GraphLoader;
+import hr.fer.projekt.clique.output.OutputEnvironment;
+import hr.fer.projekt.clique.output.implementation.StandardOutputEnvironment;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 

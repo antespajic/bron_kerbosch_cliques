@@ -1,5 +1,6 @@
 package hr.fer.projekt.clique;
 
+import hr.fer.projekt.clique.output.OutputEnvironment;
 import hr.fer.projekt.clique.utility.CollectionUtility;
 import hr.fer.projekt.clique.utility.GraphTraversalUtility;
 import org.jgrapht.Graph;
