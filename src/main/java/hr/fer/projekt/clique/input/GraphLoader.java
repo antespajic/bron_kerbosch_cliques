@@ -9,7 +9,6 @@ import org.jgrapht.graph.SimpleGraph;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -21,7 +20,7 @@ public class GraphLoader {
     /**
      * Supported extension for files with graph definitions.
      */
-    private static final String supportedExtension = "txt";
+    public static final String SUPPORTED_EXTENSION = "txt";
 
     /**
      * Singleton GraphLoader object.
@@ -52,50 +51,50 @@ public class GraphLoader {
      * objects and connections between two vertices DefaultEdges. Graph
      * definition is given through textual file at the given path. Textual
      * file with graph definition needs to conform to following rules:
-     *
+     * <p>
      * Comments start with '##' and are ignored.
-     *
+     * <p>
+     * Empty lines are ignored.
+     * <p>
      * Vertices definition starts with single line and '%Vertices%' declaration.
      * Vertices definition can span through one or more lines after declaration
      * line and vertex names are separated by one or more space characters.
-     *
+     * <p>
      * Connections definition starts with single line and '%Connections%' declaration.
      * Connections definition can span through one or more lines after declaration
      * line and connection declarations are separated by one or more space
      * characters. Connection declaration needs to be in format:
      * '<origin-vertex-name>-<destination-vertex-name>'
-     *
+     * <p>
      * Graph definition needs to conform to order of defining vertices first,
      * and connections after vertices. Lines which do not conform to specified
      * format will be considered malformed and graph will not be loaded.
      *
-     * @param filePath path to textual file with graph definition
+     * @param path path to textual file with graph definition
      * @return undirected String graph
      * @throws GraphLoaderException If path given is null, does not lead
      *                              to file or is of unsupported type. Furthermore, exception is thrown
      *                              if file has malformed structure which does not comply to
      *                              aforementioned rules.
      */
-    public UndirectedGraph<String, DefaultEdge> loadStringGraph(String filePath) {
+    public UndirectedGraph<String, DefaultEdge> loadStringGraph(Path path) {
 
-        if (filePath == null) {
+        if (path == null) {
             throw new GraphLoaderException("Path given is null.");
         }
 
-        Path path = Paths.get(filePath);
         if (!Files.isRegularFile(path)) {
             throw new GraphLoaderException("Path does not lead to file.");
         }
 
         String fileName = path.getFileName().toString();
-        int dotIndex = fileName.indexOf(".");
-        if (dotIndex == -1
-                || fileName.length() == (dotIndex + 1)
-                || !fileName.substring(dotIndex + 1, fileName.length()).equals(supportedExtension)) {
+        String fileExtension = Utility.getFileExtension(fileName);
+
+        if (fileExtension == null || !fileExtension.equals(SUPPORTED_EXTENSION)) {
             throw new GraphLoaderException("Unsupported file type.");
         }
 
-        List<String> lines = null;
+        List<String> lines;
         try {
             lines = Files.readAllLines(path);
         } catch (IOException exception) {
@@ -121,17 +120,17 @@ public class GraphLoader {
 
         for (int i = 0, j = lines.size(); i < j; i++) {
 
+            // Comments and empty lines should be discarded.
+            if (lines.get(i).isEmpty() || lines.get(i).startsWith("##")) {
+                continue;
+            }
             // Signals start of vertices definition.
-            if (state == 0 && lines.get(i).equals("%Vertices%")) {
+            else if (state == 0 && lines.get(i).equals("%Vertices%")) {
                 state = 1;
             }
             // Signals start of connection definitions.
             else if (state == 2 && lines.get(i).equals("%Connections%")) {
                 state = 3;
-            }
-            // Signals comment which should be discarded.
-            else if (lines.get(i).startsWith("##")) {
-                continue;
             }
             // Vertices definitions.
             else if (state == 1 || state == 2) {
@@ -165,7 +164,7 @@ public class GraphLoader {
             }
         }
 
-        /**
+        /*
          * After successful graph load, we should end up in 4th state which
          * signals that edge definitions, connections, were given.
          * We throw appropriate exception otherwise.
