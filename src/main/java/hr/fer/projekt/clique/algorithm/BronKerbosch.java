@@ -1,4 +1,4 @@
-package hr.fer.projekt.clique;
+package hr.fer.projekt.clique.algorithm;
 
 import hr.fer.projekt.clique.output.OutputEnvironment;
 import hr.fer.projekt.clique.utility.CollectionUtility;
@@ -59,11 +59,18 @@ public class BronKerbosch<V, E> {
     }
 
     public void performTraversal() {
+        outputEnvironment.outputStep("Bron-Kerbosch algorithm\n");
+        outputEnvironment.outputStep("Utilize degeneracy ordering: " + utilizeDegeneracyOrdering + "\n");
+        outputEnvironment.outputStep("Utilize pivot environment: " + utilizePivotEnvironment + "\n");
+
         findMaximalCliques();
         findMaximumCliques();
 
         outputEnvironment.setMaximalCliques(maximalCliques);
         outputEnvironment.setMaximumCliques(maximumCliques);
+
+        outputEnvironment.outputStep("Maximal cliques: " + maximalCliques + "\n"
+                + "Maximum cliques: " + maximumCliques);
     }
 
     private void findMaximalCliques() {
@@ -75,9 +82,9 @@ public class BronKerbosch<V, E> {
         List<V> vertexFound = new ArrayList<>();
 
         if (utilizeDegeneracyOrdering) {
-            degeneracyOrdering(potentialClique, vertexCandidates, vertexFound);
+            degeneracyOrdering(potentialClique, vertexCandidates, vertexFound, 0);
         } else {
-            findCliques(potentialClique, vertexCandidates, vertexFound);
+            findCliques(potentialClique, vertexCandidates, vertexFound, 0);
         }
     }
 
@@ -96,12 +103,14 @@ public class BronKerbosch<V, E> {
         }
     }
 
-    private void degeneracyOrdering(
-            Collection<V> potentialClique,
-            Collection<V> vertexCandidates,
-            Collection<V> vertexFound) {
-
+    private void degeneracyOrdering(Collection<V> potentialClique,
+                                    Collection<V> vertexCandidates,
+                                    Collection<V> vertexFound,
+                                    int depth) {
         Collection<V> degeneracyOrdering = GraphTraversalUtility.getDegeneracyOrdering(graph);
+
+        outputForDepth("Computed degeneracy ordering: " + degeneracyOrdering, depth);
+
         for (V vertex : degeneracyOrdering) {
             Collection<V> neighbours = GraphTraversalUtility.getNeighbouringVertices(graph, vertex, vertexCandidates);
 
@@ -111,14 +120,22 @@ public class BronKerbosch<V, E> {
             Collection<V> newVertexCandidates = CollectionUtility.intersection(vertexCandidates, neighbours);
             Collection<V> newVertexFound = CollectionUtility.intersection(vertexFound, neighbours);
 
-            findCliques(newPotentialClique, newVertexCandidates, newVertexFound);
+            findCliques(newPotentialClique, newVertexCandidates, newVertexFound, depth + 1);
 
             vertexCandidates.remove(vertex);
             vertexFound.add(vertex);
         }
     }
 
-    private void findCliques(Collection<V> potentialClique, Collection<V> vertexCandidates, Collection<V> vertexFound) {
+    private void findCliques(Collection<V> potentialClique,
+                             Collection<V> vertexCandidates,
+                             Collection<V> vertexFound,
+                             int depth) {
+
+        outputForDepth("Maximal cliques: " + potentialClique
+                + "\tCandidate vertices: " + vertexCandidates
+                + "\tDisqualified vertices: " + vertexFound, depth);
+
         if (!end(vertexCandidates, vertexFound)) {
 
             Collection<V> candidates;
@@ -160,8 +177,9 @@ public class BronKerbosch<V, E> {
                 // is indeed maximal clique.
                 if (newVertexCandidates.isEmpty() && newVertexFound.isEmpty()) {
                     maximalCliques.add(new HashSet<>(potentialClique));
+                    outputForDepth("End of depth search, output: " + potentialClique, depth);
                 } else {
-                    findCliques(potentialClique, newVertexCandidates, newVertexFound);
+                    findCliques(potentialClique, newVertexCandidates, newVertexFound, depth + 1);
                 }
 
                 // Moving vertex candidate from potential clique to collection
@@ -172,6 +190,8 @@ public class BronKerbosch<V, E> {
                 // This ensures that potential clique is not altered in recursion call.
                 potentialClique.remove(candidate);
             }
+        } else {
+            outputForDepth("End of depth search, output: " + potentialClique, depth);
         }
     }
 
@@ -196,7 +216,7 @@ public class BronKerbosch<V, E> {
     private Collection<V> pivotEnvironment(Collection<V> vertexCandidates, Collection<V> vertexFound) {
         Collection<V> pivotCandidates = CollectionUtility.union(vertexCandidates, vertexFound);
 
-        if(pivotCandidates.isEmpty()) {
+        if (pivotCandidates.isEmpty()) {
             return Collections.emptyList();
         }
 
@@ -213,5 +233,12 @@ public class BronKerbosch<V, E> {
         }
 
         return GraphTraversalUtility.getNeighbouringVertices(graph, pivotCandidate, vertexCandidates);
+    }
+
+    private void outputForDepth(String step, int level) {
+        for (int i = 0; i < level; i++) {
+            outputEnvironment.outputStep("\t");
+        }
+        outputEnvironment.outputStep(step + "\n");
     }
 }

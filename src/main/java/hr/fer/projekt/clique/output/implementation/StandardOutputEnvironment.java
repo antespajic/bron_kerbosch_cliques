@@ -52,7 +52,7 @@ public class StandardOutputEnvironment<V> implements OutputEnvironment<V> {
 
     @Override
     public void outputStep(String step) {
-        System.out.println(step);
+        System.out.print(step);
     }
 
     @Override
