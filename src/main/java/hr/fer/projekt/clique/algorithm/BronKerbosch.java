@@ -212,7 +212,6 @@ public class BronKerbosch<V, E> {
         return end;
     }
 
-    // Strategy utilizing pivot environment.
     private Collection<V> pivotEnvironment(Collection<V> vertexCandidates, Collection<V> vertexFound) {
         Collection<V> pivotCandidates = CollectionUtility.union(vertexCandidates, vertexFound);
 

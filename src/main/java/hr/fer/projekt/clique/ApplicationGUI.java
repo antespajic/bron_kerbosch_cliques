@@ -210,6 +210,7 @@ public class ApplicationGUI extends JFrame {
                 configureCenterPane("Graph definition successfully loaded from:\n"
                         + file.getAbsolutePath());
 
+                textField.setText("");
                 textField.setEditable(false);
                 confirmButton.setEnabled(false);
                 calculateButton.setEnabled(true);
@@ -424,7 +425,7 @@ public class ApplicationGUI extends JFrame {
                 cb.setEnabled(!(i == j));
                 int x = i - 1;
                 int y = j - 1;
-                cb.addActionListener(l -> grid.get(numberOfVertices * x + y).setEnabled(!cb.isSelected()));
+                cb.addActionListener(l -> grid.get(numberOfVertices * y + x).setEnabled(!cb.isSelected()));
                 grid.add(cb);
                 centerPane.add(cb);
             }
